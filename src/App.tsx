@@ -15,15 +15,10 @@ const defaultData: DashboardData = {
   stocks: [
     { ts_code: '600519', name: '贵州茅台', close: 1850.00, pct_chg: 2.35, change: 42.50, vol: 5000000, amount: 9250000000 },
     { ts_code: '000858', name: '五粮液', close: 168.50, pct_chg: -1.20, change: -2.05, vol: 2000000, amount: 3370000000 },
-    { ts_code: '600036', name: '招商银行', close: 35.80, pct_chg: 0.56, change: 0.20, vol: 15000000, amount: 5370000000 },
-    { ts_code: '000001', name: '平安银行', close: 12.45, pct_chg: -0.72, change: -0.09, vol: 8000000, amount: 996000000 },
   ],
   sectorFlows: [
     { name: '电子', amount: 50000 },
     { name: '医药', amount: 30000 },
-    { name: '银行', amount: -20000 },
-    { name: '房地产', amount: -15000 },
-    { name: '新能源', amount: 25000 },
   ],
   upCount: 45,
   downCount: 12,
@@ -41,52 +36,36 @@ function App() {
     setError(null);
     
     try {
-      const API_TOKEN = 'pat_JywfrvYDax64ufuRY3vxLt5GhR1AxOs5uGkVuX9mzduy22DJ7rOJ1CcBruxzOJs6';
-      const BOT_ID = '7611010142896996361';
-      
-      const response = await fetch('https://api.coze.cn/v3/chat', {
+      // 通过Cloudflare Pages代理
+      const response = await fetch('/api/stock', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${API_TOKEN}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          bot_id: BOT_ID,
-          user_id: 'dashboard_user',
-          query: '返回JSON股票数据',
-          stream: false,
-        }),
+        headers: { 'Content-Type': 'application/json' }
       });
 
-      const responseText = await response.text();
-      alert('API响应: ' + responseText.substring(0, 500));
+      const result = await response.json();
       
-      const dataObj = JSON.parse(responseText);
-      
-      if (dataObj.code !== 0) {
-        setError('错误: ' + dataObj.msg);
-      } else {
-        const messages = dataObj.data?.messages || [];
-        let content = '';
-        for (const msg of messages) {
-          if (msg.role === 'assistant' && msg.content) {
-            content = msg.content;
-          }
-        }
-        
-        const processed = processCozeData(content);
+      if (result.error) {
+        setError('错误: ' + result.error);
+      } else if (result.content) {
+        const processed = processCozeData(result.content);
         if (processed.stocks.length > 0) {
           setData(processed);
         } else {
-          setError('未获取到有效数据');
+          setError('未获取到有效数据: ' + result.content.substring(0, 200));
         }
+      } else {
+        setError('无响应内容: ' + JSON.stringify(result).substring(0, 200));
       }
     } catch (err) {
-      setError('错误: ' + String(err));
+      setError('请求失败: ' + String(err));
     } finally {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
 
   const totalAmountDisplay = data.totalAmount >= 100000000 
     ? (data.totalAmount / 100000000).toFixed(2) + '万亿'
