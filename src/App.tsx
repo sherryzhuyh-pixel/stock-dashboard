@@ -25,14 +25,20 @@ function App() {
   const [data, setData] = useState<DashboardData>(defaultData);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [debugInfo, setDebugInfo] = useState<string>('');
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     setError(null);
+    setDebugInfo('');
     
     try {
       const rawData = await fetchStockDataFromCoze();
+      console.log('Raw API response:', rawData);
+      setDebugInfo('Raw: ' + rawData.substring(0, 500));
+      
       const processedData = processCozeData(rawData);
+      console.log('Processed data:', processedData);
       setData(processedData);
     } catch (err) {
       setError(err instanceof Error ? err.message : '获取数据失败');
@@ -70,6 +76,12 @@ function App() {
       {error && (
         <div className="mb-4 p-4 bg-red-900/30 border border-red-800 rounded-lg text-red-400">
           {error}
+        </div>
+      )}
+
+      {debugInfo && (
+        <div className="mb-4 p-4 bg-yellow-900/30 border border-yellow-800 rounded-lg text-yellow-400 text-xs">
+          {debugInfo}
         </div>
       )}
 
