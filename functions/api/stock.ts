@@ -15,12 +15,14 @@ export async function onRequestPost(context) {
       body: JSON.stringify({
         bot_id: BOT_ID,
         user_id: 'dashboard_user',
-        query: '请执行工作流获取今日股票行情数据，返回完整的股票数据JSON格式',
+        query: '请执行工作流获取今日股票行情数据，返回JSON格式',
+        stream: false,
       }),
     });
 
     if (!response.ok) {
-      return new Response(JSON.stringify({ error: `API request failed: ${response.status}` }), {
+      const errorText = await response.text();
+      return new Response(JSON.stringify({ error: `API request failed: ${response.status}`, details: errorText }), {
         status: response.status,
         headers: { 'Content-Type': 'application/json' },
       });
@@ -29,21 +31,32 @@ export async function onRequestPost(context) {
     const data = await response.json();
     
     if (data.code !== 0) {
-      return new Response(JSON.stringify({ error: data.msg }), {
+      return new Response(JSON.stringify({ error: data.msg, code: data.code }), {
         status: 500,
         headers: { 'Content-Type': 'application/json' },
       });
     }
 
+    // 获取所有消息内容
     const messages = data.data?.messages || [];
-    const lastMessage = messages[messages.length - 1];
-    const content = lastMessage?.content || '';
+    let content = '';
+    
+    // 遍历所有消息，找到最后一个assistant的消息
+    for (const msg of messages) {
+      if (msg.role === 'assistant' && msg.content) {
+        content = msg.content;
+      }
+    }
 
-    return new Response(JSON.stringify({ content }), {
+    return new Response(JSON.stringify({ 
+      content,
+      messageCount: messages.length,
+      raw: data
+    }), {
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: error.message, stack: error.stack }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     });
