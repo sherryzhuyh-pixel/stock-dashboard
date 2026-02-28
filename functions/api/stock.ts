@@ -15,18 +15,10 @@ export async function onRequestPost(context) {
       body: JSON.stringify({
         bot_id: BOT_ID,
         user_id: 'dashboard_user',
-        query: '请执行工作流获取今日股票行情数据，返回JSON格式',
+        query: '请直接返回JSON格式的股票数据，包含：market_indices(大盘指数)、stocks(个股行情)、sector_flows(板块资金)、up_count(涨停数)、down_count(跌停数)、total_amount(成交额)',
         stream: false,
       }),
     });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      return new Response(JSON.stringify({ error: `API request failed: ${response.status}`, details: errorText }), {
-        status: response.status,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
 
     const data = await response.json();
     
@@ -37,26 +29,45 @@ export async function onRequestPost(context) {
       });
     }
 
-    // 获取所有消息内容
+    // 提取消息内容
     const messages = data.data?.messages || [];
     let content = '';
     
-    // 遍历所有消息，找到最后一个assistant的消息
     for (const msg of messages) {
       if (msg.role === 'assistant' && msg.content) {
         content = msg.content;
       }
     }
 
+    // 尝试提取JSON
+    let jsonData = null;
+    if (content) {
+      // 尝试提取JSON块
+      const jsonMatch = content.match(/```json\n([\s\S]*?)\n```/);
+      if (jsonMatch) {
+        try {
+          jsonData = JSON.parse(jsonMatch[1]);
+        } catch (e) {}
+      }
+      
+      // 如果没有json块，尝试直接解析
+      if (!jsonData) {
+        try {
+          jsonData = JSON.parse(content);
+        } catch (e) {}
+      }
+    }
+
     return new Response(JSON.stringify({ 
-      content,
-      messageCount: messages.length,
-      raw: data
+      content: content,
+      jsonData: jsonData,
+      hasMessages: messages.length,
+      firstMessageRole: messages[0]?.role
     }), {
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message, stack: error.stack }), {
+    return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     });
