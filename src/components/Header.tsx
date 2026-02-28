@@ -1,3 +1,5 @@
+import { useState, useEffect, useCallback } from 'react';
+
 interface HeaderProps {
   lastUpdateTime: string;
   onRefresh: () => void;
@@ -5,23 +7,35 @@ interface HeaderProps {
 }
 
 export function Header({ lastUpdateTime, onRefresh, isLoading }: HeaderProps) {
+  const handleClick = () => {
+    alert('按钮被点击了！');
+    onRefresh();
+  };
+
   return (
-    <header className="flex items-center justify-between mb-6">
-      <h1 className="text-2xl font-bold text-white">股票行情 Dashboard</h1>
-      <div className="flex items-center gap-4">
-        <div className="flex items-center gap-2 text-gray-400">
-          <span className="text-sm">最后更新: {lastUpdateTime}</span>
+    <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+      <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: 'white' }}>股票行情 Dashboard</h1>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <div style={{ color: '#999' }}>
+          <span>最后更新: {lastUpdateTime}</span>
         </div>
         <button
-          onClick={() => {
-            console.log('Refresh button clicked');
-            onRefresh();
-          }}
+          onClick={handleClick}
           disabled={isLoading}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 text-white rounded-lg transition-colors cursor-pointer"
-          style={{ cursor: isLoading ? 'not-allowed' : 'pointer' }}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '8px 16px',
+            backgroundColor: isLoading ? '#1d4ed8' : '#2563eb',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            cursor: isLoading ? 'not-allowed' : 'pointer',
+            fontSize: '14px'
+          }}
         >
-          <span>{isLoading ? '加载中...' : '刷新数据'}</span>
+          {isLoading ? '加载中...' : '刷新数据'}
         </button>
       </div>
     </header>
