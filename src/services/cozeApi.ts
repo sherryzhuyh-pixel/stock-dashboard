@@ -30,7 +30,8 @@ export async function fetchStockDataFromCoze(): Promise<string> {
   }
 
   const decoder = new TextDecoder();
-  let fullContent = '';
+  let content = '';
+  let reasoningContent = '';
   let buffer = '';
 
   while (true) {
@@ -46,14 +47,20 @@ export async function fetchStockDataFromCoze(): Promise<string> {
         try {
           const data = JSON.parse(line.slice(6));
           
-          // Check for message content
-          if (data.type === 'answer' && data.content) {
-            fullContent += data.content;
+          // 收集content
+          if (data.content) {
+            content += data.content;
           }
           
-          // Check for completed event
+          // 收集reasoning_content (实际数据在这里)
+          if (data.reasoning_content) {
+            reasoningContent += data.reasoning_content;
+          }
+          
+          // 检查完成事件
           if (data.event === 'conversation.chat.completed') {
-            return fullContent;
+            // 优先使用content，如果没有就用reasoningContent
+            return content || reasoningContent;
           }
         } catch (e) {
           // Skip invalid JSON
@@ -62,5 +69,5 @@ export async function fetchStockDataFromCoze(): Promise<string> {
     }
   }
 
-  return fullContent;
+  return content || reasoningContent;
 }
