@@ -1,5 +1,3 @@
-import { useState, useEffect, useCallback } from 'react';
-
 interface HeaderProps {
   lastUpdateTime: string;
   onRefresh: () => void;
