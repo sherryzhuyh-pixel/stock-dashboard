@@ -5,11 +5,6 @@ interface HeaderProps {
 }
 
 export function Header({ lastUpdateTime, onRefresh, isLoading }: HeaderProps) {
-  const handleClick = () => {
-    alert('按钮被点击了！');
-    onRefresh();
-  };
-
   return (
     <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
       <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: 'white' }}>股票行情 Dashboard</h1>
@@ -18,7 +13,7 @@ export function Header({ lastUpdateTime, onRefresh, isLoading }: HeaderProps) {
           <span>最后更新: {lastUpdateTime}</span>
         </div>
         <button
-          onClick={handleClick}
+          onClick={onRefresh}
           disabled={isLoading}
           style={{
             display: 'flex',
