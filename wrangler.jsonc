@@ -5,10 +5,12 @@
   "observability": {
     "enabled": true
   },
+  "pages": {
+    "functions": {
+      "compatibility_date": "2025-09-27"
+    }
+  },
   "assets": {
     "not_found_handling": "single-page-application"
-  },
-  "compatibility_flags": [
-    "nodejs_compat"
-  ]
+  }
 }
