@@ -4,9 +4,12 @@ import { MetricCard } from '@/components/MetricCard';
 import { StockTable } from '@/components/StockTable';
 import { SectorFlowChart } from '@/components/SectorFlowChart';
 import { DistributionChart } from '@/components/DistributionChart';
-import { fetchStockDataFromCoze } from '@/services/cozeApi';
 import { processCozeData } from '@/utils/dataProcessor';
 import { DashboardData } from '@/types/stock';
+
+const API_TOKEN = 'pat_JywfrvYDax64ufuRY3vxLt5GhR1AxOs5uGkVuX9mzduy22DJ7rOJ1CcBruxzOJs6';
+const BOT_ID = '7611010142896996361';
+const API_BASE_URL = 'https://api.coze.cn';
 
 const defaultData: DashboardData = {
   marketIndices: [
@@ -21,6 +24,44 @@ const defaultData: DashboardData = {
   lastUpdateTime: '',
 };
 
+async function callCozeAPI(): Promise<string> {
+  const response = await fetch(`${API_BASE_URL}/v3/chat`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${API_TOKEN}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      bot_id: BOT_ID,
+      user_id: 'dashboard_user',
+      query: '请返回JSON格式的股票数据，包含market_indices、stocks、sector_flows、up_count、down_count、total_amount',
+      stream: false,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`API请求失败: ${response.status}`);
+  }
+
+  const data = await response.json();
+  
+  if (data.code !== 0) {
+    throw new Error(`Coze错误: ${data.msg}`);
+  }
+
+  // 获取消息内容
+  const messages = data.data?.messages || [];
+  let content = '';
+  
+  for (const msg of messages) {
+    if (msg.role === 'assistant' && msg.content) {
+      content = msg.content;
+    }
+  }
+
+  return content;
+}
+
 function App() {
   const [data, setData] = useState<DashboardData>(defaultData);
   const [isLoading, setIsLoading] = useState(false);
@@ -33,15 +74,17 @@ function App() {
     setDebugInfo('');
     
     try {
-      const rawData = await fetchStockDataFromCoze();
+      // 直接调用Coze API（绕过代理）
+      const rawData = await callCozeAPI();
       console.log('Raw API response:', rawData);
-      setDebugInfo('Raw: ' + rawData.substring(0, 500));
+      setDebugInfo('API响应: ' + rawData.substring(0, 1000));
       
       const processedData = processCozeData(rawData);
       console.log('Processed data:', processedData);
       setData(processedData);
     } catch (err) {
-      setError(err instanceof Error ? err.message : '获取数据失败');
+      const errMsg = err instanceof Error ? err.message : '获取数据失败';
+      setError(errMsg);
       console.error('Fetch error:', err);
     } finally {
       setIsLoading(false);
@@ -50,15 +93,6 @@ function App() {
 
   useEffect(() => {
     fetchData();
-    
-    const interval = setInterval(() => {
-      const now = new Date();
-      if (now.getHours() >= 16 && now.getHours() < 17) {
-        fetchData();
-      }
-    }, 60 * 60 * 1000);
-    
-    return () => clearInterval(interval);
   }, [fetchData]);
 
   const totalAmountDisplay = data.totalAmount >= 100000000 
@@ -75,13 +109,13 @@ function App() {
 
       {error && (
         <div className="mb-4 p-4 bg-red-900/30 border border-red-800 rounded-lg text-red-400">
-          {error}
+          错误: {error}
         </div>
       )}
 
       {debugInfo && (
-        <div className="mb-4 p-4 bg-yellow-900/30 border border-yellow-800 rounded-lg text-yellow-400 text-xs">
-          {debugInfo}
+        <div className="mb-4 p-4 bg-gray-800 border border-gray-700 rounded-lg text-green-400 text-xs overflow-auto">
+          <pre>{debugInfo}</pre>
         </div>
       )}
 
