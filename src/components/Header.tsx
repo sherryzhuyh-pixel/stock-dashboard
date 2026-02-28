@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { RefreshCw, Clock } from 'lucide-react';
 
 interface HeaderProps {
@@ -16,9 +17,13 @@ export function Header({ lastUpdateTime, onRefresh, isLoading }: HeaderProps) {
           <span className="text-sm">最后更新: {lastUpdateTime}</span>
         </div>
         <button
-          onClick={onRefresh}
+          onClick={() => {
+            console.log('Refresh button clicked');
+            onRefresh();
+          }}
           disabled={isLoading}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 text-white rounded-lg transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 text-white rounded-lg transition-colors cursor-pointer"
+          style={{ cursor: isLoading ? 'not-allowed' : 'pointer' }}
         >
           <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
           <span>{isLoading ? '加载中...' : '刷新数据'}</span>
