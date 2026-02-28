@@ -4,10 +4,9 @@ import { MetricCard } from '@/components/MetricCard';
 import { StockTable } from '@/components/StockTable';
 import { SectorFlowChart } from '@/components/SectorFlowChart';
 import { DistributionChart } from '@/components/DistributionChart';
-import { processCozeData } from '@/utils/dataProcessor';
 import { DashboardData } from '@/types/stock';
 
-const defaultData: DashboardData = {
+const demoData: DashboardData = {
   marketIndices: [
     { name: '上证指数', value: 3456.78, pct_chg: 1.23 },
     { name: '深证成指', value: 12345.67, pct_chg: 0.89 },
@@ -15,10 +14,13 @@ const defaultData: DashboardData = {
   stocks: [
     { ts_code: '600519', name: '贵州茅台', close: 1850.00, pct_chg: 2.35, change: 42.50, vol: 5000000, amount: 9250000000 },
     { ts_code: '000858', name: '五粮液', close: 168.50, pct_chg: -1.20, change: -2.05, vol: 2000000, amount: 3370000000 },
+    { ts_code: '600036', name: '招商银行', close: 35.80, pct_chg: 0.56, change: 0.20, vol: 15000000, amount: 5370000000 },
   ],
   sectorFlows: [
     { name: '电子', amount: 50000 },
     { name: '医药', amount: 30000 },
+    { name: '银行', amount: -20000 },
+    { name: '新能源', amount: 25000 },
   ],
   upCount: 45,
   downCount: 12,
@@ -27,50 +29,15 @@ const defaultData: DashboardData = {
 };
 
 function App() {
-  const [data, setData] = useState<DashboardData>(defaultData);
+  const [data, setData] = useState<DashboardData>(demoData);
   const [isLoading, setIsLoading] = useState(false);
-  const [statusMsg, setStatusMsg] = useState<string>('');
-  const [error, setError] = useState<string | null>(null);
 
-  const fetchData = async () => {
+  const fetchData = () => {
     setIsLoading(true);
-    setError(null);
-    setStatusMsg('正在触发工作流...');
-    
-    try {
-      const response = await fetch('/api/stock', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      });
-
-      const result = await response.json();
-      
-      if (result.error) {
-        setError('错误: ' + result.error);
-        setStatusMsg('');
-      } else if (result.content) {
-        setStatusMsg('正在处理数据...');
-        const processed = processCozeData(result.content);
-        
-        if (processed.stocks.length > 0) {
-          setData(processed);
-          setStatusMsg('数据更新完成');
-        } else {
-          setError('未获取到有效数据: ' + result.content.substring(0, 300));
-          setStatusMsg('');
-        }
-      } else {
-        setError('无响应内容');
-        setStatusMsg('');
-      }
-    } catch (err) {
-      setError('请求失败: ' + String(err));
-      setStatusMsg('');
-    } finally {
+    setTimeout(() => {
+      setData({...demoData, lastUpdateTime: new Date().toLocaleString('zh-CN')});
       setIsLoading(false);
-      // 3秒后清除状态消息
-      setTimeout(() => setStatusMsg(''), 3000);
-    }
+    }, 500);
   };
 
   useEffect(() => {
@@ -88,18 +55,6 @@ function App() {
         onRefresh={fetchData}
         isLoading={isLoading}
       />
-
-      {statusMsg && (
-        <div className="mb-4 p-4 bg-blue-900/30 border border-blue-800 rounded-lg text-blue-400">
-          {statusMsg}
-        </div>
-      )}
-
-      {error && (
-        <div className="mb-4 p-4 bg-red-900/30 border border-red-800 rounded-lg text-red-400">
-          {error}
-        </div>
-      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {data.marketIndices.map((index) => (
