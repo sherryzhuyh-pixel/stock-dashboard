@@ -29,14 +29,15 @@ const defaultData: DashboardData = {
 function App() {
   const [data, setData] = useState<DashboardData>(defaultData);
   const [isLoading, setIsLoading] = useState(false);
+  const [statusMsg, setStatusMsg] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
 
   const fetchData = async () => {
     setIsLoading(true);
     setError(null);
+    setStatusMsg('正在触发工作流...');
     
     try {
-      // 通过Cloudflare Pages代理
       const response = await fetch('/api/stock', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
@@ -46,20 +47,29 @@ function App() {
       
       if (result.error) {
         setError('错误: ' + result.error);
+        setStatusMsg('');
       } else if (result.content) {
+        setStatusMsg('正在处理数据...');
         const processed = processCozeData(result.content);
+        
         if (processed.stocks.length > 0) {
           setData(processed);
+          setStatusMsg('数据更新完成');
         } else {
-          setError('未获取到有效数据: ' + result.content.substring(0, 200));
+          setError('未获取到有效数据: ' + result.content.substring(0, 300));
+          setStatusMsg('');
         }
       } else {
-        setError('无响应内容: ' + JSON.stringify(result).substring(0, 200));
+        setError('无响应内容');
+        setStatusMsg('');
       }
     } catch (err) {
       setError('请求失败: ' + String(err));
+      setStatusMsg('');
     } finally {
       setIsLoading(false);
+      // 3秒后清除状态消息
+      setTimeout(() => setStatusMsg(''), 3000);
     }
   };
 
@@ -78,6 +88,12 @@ function App() {
         onRefresh={fetchData}
         isLoading={isLoading}
       />
+
+      {statusMsg && (
+        <div className="mb-4 p-4 bg-blue-900/30 border border-blue-800 rounded-lg text-blue-400">
+          {statusMsg}
+        </div>
+      )}
 
       {error && (
         <div className="mb-4 p-4 bg-red-900/30 border border-red-800 rounded-lg text-red-400">
